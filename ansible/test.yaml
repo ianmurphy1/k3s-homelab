@@ -2,9 +2,6 @@
 - name: Install and enable k3s on master node
   hosts: master
   remote_user: root
-  vars:
-    role_id: 6de70933-d865-9ed9-eb54-41fe2a3cba06
-    secret_id: 4ce79284-8e14-dfc8-a4cc-a81ba20b6712
   tasks:
     - name: Get token for vault auth
       ansible.builtin.shell:

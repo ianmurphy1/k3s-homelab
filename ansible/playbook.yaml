@@ -39,29 +39,3 @@
         secret_id: "{{ secrets.vault_admin_secret_id }}"
       include_role:
         name: bootstrap
-
-#- name: Bootstrap cluster
-#  hosts: master
-#  remote_user: root
-#  vars:
-#    role_id: 6de70933-d865-9ed9-eb54-41fe2a3cba06
-#    secret_id: 4ce79284-8e14-dfc8-a4cc-a81ba20b6712
-#  roles:
-#    - bootstrap
-#
-#- name: Extra
-#  hosts: localhost
-#  tasks:
-#    - name: Print it
-#      ansible.builtin.debug:
-#        msg: "{{ hostvars[groups['master'][0]].join_token }}"
-#
-#    - name: Write the fucker
-#      ansible.builtin.copy:
-#        content: "{{ hostvars[groups['master'][0]] }}"
-#        dest: "/home/ian/hostvars"
-#
-#    - name: Write the fucker
-#      ansible.builtin.copy:
-#        content: "{{ groups }}"
-#        dest: "/home/ian/goups"
