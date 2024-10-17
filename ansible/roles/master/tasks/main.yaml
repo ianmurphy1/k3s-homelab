@@ -1,0 +1,16 @@
+---
+- name: Install k3s as Master
+  ansible.builtin.shell:
+    cmd: |
+      curl -fL https://get.k3s.io \
+      | sh -s - --disable traefik --disable servicelb server --cluster-init
+    executable: /bin/bash
+
+- name: Get master token
+  ansible.builtin.command:
+    cmd: cat /var/lib/rancher/k3s/server/token
+  register: token
+
+- name: Set token for workers to join cluster
+  ansible.builtin.set_fact:
+    join_token: "{{ token.stdout }}"

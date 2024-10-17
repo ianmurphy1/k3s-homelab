@@ -1,0 +1,67 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  namespace: kube-system
+  name: vault-operator
+spec:
+  targetNamespace: vault
+  createNamespace: true
+  version: 0.9.0
+  chart: vault-secrets-operator
+  repo: https://helm.releases.hashicorp.com
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-auth
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-auth
+  annotations:
+    kubernetes.io/service-account.name: vault-auth
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: role-tokenreview-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: vault-auth
+    namespace: default
+  - kind: ServiceAccount
+    name: default
+    namespace: argocd
+
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  namespace: default
+  name: vault-connection
+spec:
+  # address to the Vault server.
+  address: https://vault.home
+  skipTLSVerify: true
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: vault-auth
+spec:
+  vaultConnectionRef: vault-connection
+  allowedNamespaces:
+    - "*"
+  method: kubernetes
+  mount: vso
+  kubernetes:
+    role: vso-role
+    serviceAccount: default
+---

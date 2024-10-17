@@ -1,0 +1,8 @@
+---
+- name: Install k3s and join cluster as worker
+  ansible.builtin.shell:
+    cmd: |
+      curl -fL https://get.k3s.io | \
+        K3S_TOKEN={{ join_token | quote }} \
+        K3S_URL={{ join_url | quote }} \
+        sh -s -

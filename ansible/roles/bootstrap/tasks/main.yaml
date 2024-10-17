@@ -1,0 +1,84 @@
+---
+- name: Copy minimal helm charts onto instance for bootstrapping
+  ansible.builtin.copy:
+    src: "./{{ item }}.yaml"
+    dest: /var/lib/rancher/k3s/server/manifests/
+  with_items:
+    - argocd
+    - vault
+
+- name: Replace entry for where to send DNS requests in coredns
+  ansible.builtin.replace:
+    path: /var/lib/rancher/k3s/server/manifests/coredns.yaml
+    regexp: '/etc/resolv.conf'
+    replace: '192.168.1.8' 
+
+- name: Install argocd cli
+  ansible.builtin.script: ./argo_cli_install.sh
+
+- name: Get token for vault auth
+  ansible.builtin.shell:
+    cmd: |
+      kubectl get secret vault-auth --output='go-template={%raw%}{{ .data.token }}{%endraw%}' -n default | base64 --decode
+    executable: /bin/bash
+  register: res
+
+- set_fact:
+    k3s_token: "{{ res.stdout }}"
+
+- name: Get cluster CA for vault auth
+  ansible.builtin.shell:
+    cmd: |
+      kubectl config view --raw --minify --flatten --output='jsonpath={.clusters[].cluster.certificate-authority-data}' -n default | base64 --decode 
+    executable: /bin/bash
+  register: res
+
+- set_fact:
+    k3s_ca: "{{ res.stdout }}"
+
+- name: Login to vault
+  community.hashi_vault.vault_login:
+    auth_method: approle
+    url: https://vault.home
+    role_id: "{{ role_id }}"
+    secret_id: "{{ secret_id }}"
+  delegate_to: localhost
+  register: vault
+
+- name: Create or update vaults kubernetes auth method
+  community.hashi_vault.vault_write:
+    url: https://vault.home
+    path: auth/vso/config
+    data:
+      bound_service_account_namespaces: '*'
+      token_reviewer_jwt: "{{ k3s_token }}"
+      kubernetes_ca_cert: "{{ k3s_ca }}"
+      kubernetes_host: "https://{{ groups['master'][0] }}:6443"
+    auth_method: token
+    token: "{{ vault | community.hashi_vault.vault_login_token }}"
+  delegate_to: localhost
+
+- name: Get argocd admin user pass
+  community.hashi_vault.vault_kv2_get:
+    url: https://vault.home
+    token: "{{ vault | community.hashi_vault.vault_login_token }}"
+    auth_method: token
+    engine_mount_point: kv
+    path: argocd-admin-user
+  register: argocd_admin
+  delegate_to: localhost
+
+- name: Wait as initially server is unresponsive after setting vault up
+  ansible.builtin.wait_for:
+    timeout: 60
+  delegate_to: localhost
+
+- name: Bootstrap argocd with apps
+  ansible.builtin.script:
+    cmd: ./argocd_apps.sh
+    executable: /bin/bash
+  async: 0
+  poll: 0
+  environment:
+    ADMIN_PASSWORD: "{{ argocd_admin.secret.pass }}"
+

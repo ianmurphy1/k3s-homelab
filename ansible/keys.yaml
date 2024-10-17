@@ -1,0 +1,9 @@
+- name: Remove new hosts from known hosts file
+  hosts: localhost
+  tasks:
+    - name: Remove them from hosts
+      ansible.builtin.lineinfile:
+        path: /home/ian/.ssh/known_hosts
+        state: absent
+        regexp: "^{{ item }}"
+      with_items: "{{ groups['all'] }}"

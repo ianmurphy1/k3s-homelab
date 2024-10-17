@@ -1,0 +1,63 @@
+---
+- name: Install and enable k3s on master node
+  hosts: master
+  remote_user: root
+  vars:
+    role_id: 6de70933-d865-9ed9-eb54-41fe2a3cba06
+    secret_id: 4ce79284-8e14-dfc8-a4cc-a81ba20b6712
+  tasks:
+    - name: Get token for vault auth
+      ansible.builtin.shell:
+        cmd: |
+          kubectl get secret vault-auth --output='go-template={%raw%}{{ .data.token }}{%endraw%}' -n default | base64 --decode
+        executable: /bin/bash
+      register: res
+
+    - set_fact:
+        token: "{{ res.stdout }}"
+
+    - name: Print it
+      ansible.builtin.debug:
+        var: token
+
+    - name: Get cluster CA for vault auth
+      ansible.builtin.shell:
+        cmd: |
+          kubectl config view --raw --minify --flatten --output='jsonpath={.clusters[].cluster.certificate-authority-data}' -n default | base64 --decode 
+        executable: /bin/bash
+      register: res
+
+    - set_fact:
+        k3s_ca: "{{ res.stdout }}"
+
+    - name: Print it
+      ansible.builtin.debug:
+        var: k3s_ca
+
+
+    - name: Login to vault
+      community.hashi_vault.vault_login:
+        auth_method: approle
+        url: https://vault.home
+        role_id: "{{ role_id }}"
+        secret_id: "{{ secret_id }}"
+      delegate_to: localhost
+      register: vault
+
+    - name: Print it
+      ansible.builtin.debug:
+        var: vault
+
+    - name: Create new kubernetes auth method
+      community.hashi_vault.vault_write:
+        url: https://vault.home
+        path: auth/test/config
+        data:
+          bound_service_account_namespaces: '*'
+          token_reviewer_jwt: "{{ token }}"
+          kubernetes_ca_cert: "{{ k3s_ca }}"
+          kubernetes_host: "https://{{ groups['master'][0] }}:6443"
+        auth_method: token
+        token: "{{ vault | community.hashi_vault.vault_login_token }}"
+      delegate_to: localhost
+

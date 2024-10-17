@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: argocd
+  namespace: kube-system
+spec:
+  targetNamespace: argocd
+  createNamespace: true
+  version: 7.6.10
+  repo: https://argoproj.github.io/argo-helm
+  chart: argo-cd
+  valuesContent: |
+    dex:
+      enabled: false
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  namespace: argocd
+  name: repo-secret
+spec:
+  vaultAuthRef: default/vault-auth
+  mount: kv
+  type: kv-v2
+  path: argocd-test
+  refreshAfter: 5s
+  destination:
+    labels:
+      argocd.argoproj.io/secret-type: repo-creds
+    create: true
+    name: argocd-github-creds
+---
