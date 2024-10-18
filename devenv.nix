@@ -2,21 +2,11 @@
 
 {
   # https://devenv.sh/basics/
-  env.GREET = "devenv";
   env.ANSIBLE_HOST_KEY_CHECKING = "False";
   env.REQUESTS_CA_BUNDLE = "/home/ian/.step/certs/root_ca.crt";
 
   # https://devenv.sh/packages/
   packages = [ ];
-
-  # https://devenv.sh/languages/
-  # languages.rust.enable = true;
-
-  # https://devenv.sh/processes/
-  # processes.cargo-watch.exec = "cargo-watch";
-
-  # https://devenv.sh/services/
-  # services.postgres.enable = true;
 
   languages = {
     opentofu.enable = true;
@@ -32,13 +22,7 @@
     };
   };
 
-  # https://devenv.sh/scripts/
-  scripts.hello.exec = ''
-    echo hello from $GREET
-  '';
-
   enterShell = ''
-    hello
     git --version
   '';
 
