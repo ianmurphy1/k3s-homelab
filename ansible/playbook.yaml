@@ -6,25 +6,25 @@
         path: /home/ian/.ssh/known_hosts
         state: absent
         regexp: "^{{ item }}"
-      with_items: "{{ groups['all'] }}"
+      with_items: "{{ groups['tag_k3s'] | map('extract', hostvars, ['ansible_host']) }}"
 
 - name: Install and enable k3s on master node
-  hosts: master
+  hosts: tag_k3s_master
   remote_user: root
   roles:
     - master
 
 - name: Install and enable k3s on the worker nodes
-  hosts: workers
+  hosts: tag_k3s_worker
   remote_user: root
   vars:
-    join_token: "{{ hostvars[groups['master'][0]].join_token }}"
-    join_url: "https://{{ groups['master'][0] }}:6443"
+    join_token: "{{ hostvars[groups['tag_k3s_master'][0]].join_token }}"
+    join_url: "https://{{ groups['tag_k3s_master'] | map('extract', hostvars, ['ansible_host']) | first }}:6443"
   roles:
     - worker
     
 - name: Bootstrap cluster
-  hosts: master
+  hosts: tag_k3s_master
   remote_user: root
   tasks:
     - name: Gather vars from sops file
@@ -37,5 +37,6 @@
       vars:
         role_id: "{{ secrets.vault_admin_role_id }}"
         secret_id: "{{ secrets.vault_admin_secret_id }}"
+        kubernetes_host: "https://{{ groups['tag_k3s_master'] | map('extract', hostvars, ['ansible_host']) | first }}:6443"
       include_role:
         name: bootstrap

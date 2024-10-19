@@ -1,15 +1,14 @@
 deploy:
   cd ./opentofu && \
-    tofu apply -var-file=./variable.tfvars -auto-approve && \
-    ./generate_inventory.sh
+    tofu apply -auto-approve
 
 destroy:
   cd ./opentofu && \
-    tofu apply -var-file=./variable.tfvars -auto-approve -destroy
+    tofu apply -auto-approve -destroy
 
 configure:
   cd ./ansible && \
-    ansible-playbook -i k3s.ini playbook.yaml
+    ansible-playbook -i inventory/proxmox.yaml playbook.yaml
 
 doit:
   just deploy configure

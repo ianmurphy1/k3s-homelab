@@ -2,8 +2,8 @@
   hosts: localhost
   tasks:
     - name: Remove them from hosts
-      ansible.builtin.lineinfile:
-        path: /home/ian/.ssh/known_hosts
-        state: absent
-        regexp: "^{{ item }}"
-      with_items: "{{ groups['all'] }}"
+      ansible.builtin.debug:
+        msg: "{{ hostvars[groups['tag_k3s_master'][0]]['ansible_host'] }}"
+    - name: Remove them from hosts
+      ansible.builtin.debug:
+        msg: "{{ groups['tag_k3s'] | map('extract', hostvars, ['ansible_host']) }}"

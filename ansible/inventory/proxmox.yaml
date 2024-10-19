@@ -1,0 +1,15 @@
+plugin: community.general.proxmox
+user: root@pam
+token_id: terraform
+token_secret: "{{ lookup('community.sops.sops', '../secrets.yaml', extract='[\"pve_token\"]') }}"
+url: https://pve.home:8006
+want_facts: true
+keyed_groups:
+  - key: proxmox_tags_parsed
+    separator: ""
+    prefix: tag_
+groups:
+  proxmox_lxc_groups: true
+compose:
+  ansible_host: proxmox_agent_interfaces[1]["ip-addresses"][0].split('/')[0]
+  ansible_user: root

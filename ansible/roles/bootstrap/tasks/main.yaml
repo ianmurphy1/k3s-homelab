@@ -53,7 +53,7 @@
       bound_service_account_namespaces: '*'
       token_reviewer_jwt: "{{ k3s_token }}"
       kubernetes_ca_cert: "{{ k3s_ca }}"
-      kubernetes_host: "https://{{ groups['master'][0] }}:6443"
+      kubernetes_host: "{{ kubernetes_host }}"
     auth_method: token
     token: "{{ vault | community.hashi_vault.vault_login_token }}"
   delegate_to: localhost
