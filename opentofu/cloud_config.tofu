@@ -12,7 +12,6 @@ resource "proxmox_virtual_environment_file" "cloud_config" {
     data = <<-EOF
     #cloud-config
     disable_root: false
-    locale: en_IE
     timezone: Europe/Dublin
     hostname: k3s-${count.index}
     ssh_authorized_keys:

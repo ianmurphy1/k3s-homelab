@@ -24,6 +24,8 @@ LOGIN_CMD=(
   'localhost:8080'
   --username admin
   --insecure
+  --skip-test-tls
+  --grpc-web
   --password
 )
 
