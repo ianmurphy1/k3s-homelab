@@ -53,6 +53,7 @@ resource "proxmox_virtual_environment_vm" "k3s" {
   }
 }
 
+
 resource "proxmox_virtual_environment_download_file" "image" {
   content_type = "iso"
   datastore_id = "hdd"

@@ -67,6 +67,7 @@ APPS=(
 	'nginx-ingress' # Nginx ingress controller
 	'cert-manager' # Creates the cert issuer, points at local network ACME server
 	'argocd' # Creates argo related resources not in the helm chart, Ingress etc.
+	'vault'
 )
 argocd app get apps --hard-refresh >/dev/null 2>&1
 argocd app sync apps >/dev/null 2>&1
