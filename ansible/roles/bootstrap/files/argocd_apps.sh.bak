@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -ex
 
-ADMIN_PASSWORD=${ADMIN_PASSWORD:?undefined}
+NEW_PASS=${ADMIN_PASSWORD:-undefined}
+[[ $NEW_PASS == undefined ]] && exit 1
 
 # Set up port forwarding to the argo app.
 # When used with the `--core` option flag
@@ -17,7 +18,10 @@ FORWARD_CMD=(
 
 "${FORWARD_CMD[@]}" >/dev/null 2>&1 &
 FORWARD_PID=$!
-sleep 5
+
+
+CURRENT_PASS="$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)"
+CHANGE_PASS=true
 
 LOGIN_CMD=(
   argocd
@@ -28,10 +32,14 @@ LOGIN_CMD=(
   --skip-test-tls
   --grpc-web
   --password
-  ${ADMIN_PASSWORD}
 )
 
-"${LOGIN_CMD[@]}"
+"${LOGIN_CMD[@]}" "${CURRENT_PASS}" && _login_rc=$? || _login_rc=$?
+
+if [[ $_login_rc -ne 0 ]]; then
+	CHANGE_PASS=false
+	"${LOGIN_CMD[@]}" "${ADMIN_PASSWORD}"
+fi
 
 # Creating the app is tempermental due
 # to issues with argo -> github access
@@ -39,7 +47,6 @@ LOGIN_CMD=(
 # - Another was rate limiting
 # So try 5 times to create it otherwise
 # bail out
-sleep_for=200
 for i in {1..5}; do
 	argocd app create apps \
 	  --dest-namespace argocd \
@@ -53,10 +60,7 @@ for i in {1..5}; do
     echo "Created apps"
     break
   }
-  [[ $i -eq 5 ]] && exit $_create_rc || {
-    _sleep_ms="$(( $i * $i * $sleep_for ))"
-    sleep "${_sleep_ms:0:-3}.${_sleep_ms: -3}"
-  }
+	[[ $i -eq 5 ]] && exit $_create_rc || sleep 2
 done
 
 sleep 20
@@ -85,3 +89,18 @@ for app in "${APPS[@]}"; do
 	argocd app sync "${app}" --async
 	sleep 30
 done
+
+echo "All apps synced"
+echo "Checking if password needs to be updated"
+
+if [[ ${CHANGE_PASS} == true ]]; then
+  echo "Password being updated"
+  kill -9 ${FORWARD_PID}
+  #wait ${FORWARD_PID} 2> /dev/null
+  sleep 2
+  "${FORWARD_CMD[@]}" >/dev/null 2>&1 &
+  sleep 2
+
+  "${LOGIN_CMD[@]}" "${CURRENT_PASS}"
+  argocd account update-password --current-password "${CURRENT_PASS}" --new-password "${NEW_PASS}"
+fi

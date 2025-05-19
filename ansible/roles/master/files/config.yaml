@@ -1,0 +1,5 @@
+kube-apiserver-arg:
+  - "oidc-issuer-url=https://dex.home"
+  - "oidc-client-id=kube-apiserver"
+  - "oidc-username-claim=email"
+  - "oidc-groups-claim=groups"

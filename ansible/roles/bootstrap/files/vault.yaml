@@ -2,11 +2,11 @@ apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
   namespace: kube-system
-  name: vault-operator
+  name: vault
 spec:
   targetNamespace: vault
   createNamespace: true
-  version: 0.9.1
+  version: 0.10.0
   chart: vault-secrets-operator
   repo: https://helm.releases.hashicorp.com
 

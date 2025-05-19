@@ -11,27 +11,63 @@ metadata:
 spec:
   targetNamespace: argocd
   createNamespace: true
-  version: 7.8.4
+  version: 7.8.23
   repo: https://argoproj.github.io/argo-helm
   chart: argo-cd
   valuesContent: |
+    global:
+      domain: argocd.k3s.home
     dex:
       enabled: false
+    configs:
+      secret:
+        createSecret: false
+      ssh:
+        extraHosts: |
+          gitea.home ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDAtAi+wlsyD6VW64xsYWLa/20ISceAOTaiKs4kAgcKyzzaveSdGSemhXqR/CraMCrVkxnbCu/0t3Fe7ggAIqW2UM8zS/6RtLXUaTXBbggnhXUMxlGiu6td5MmYpsCy4+sRi8G2CUMnhK9DQ0T+LEepz0G/idxF9NU/h+qHTfmsW4jn0udHZfYsOUdqSoJI6TdMDZwxi+sE9WyBHSu3n2Kjfx2KVK9GKUa8ZGzjbPsKUa8UhDl2JtIub+We2zVJh9VcXROjwKVQNgQvqG2SEN+IkV16YO2IYCivjwisq0bq4gCq7yB6DMqggnPA6eqmt1YwaaQJfh/SmGmzoP9TFFf6eg5Z6fgG+4Iht6P5dWUPDRg5U0C0elT2XQLMFUEQDkN1FsnxwBslZTVM19mDp5ENLMGxZM7S/o85kraNx9IpAqO+JR41z5Hy5IyZEBlihaI/kz6S9/VTdp4/B7lZ6b/+T0c/ISLNBOr9fihbHOyAHXlK5vi6W7R1YZ9P4z+KweyeZSTKIvFjoOixqNrfCJTNQ+tcFMR/sDzZVGTfHMyaIqyzitaa5mTmoqMebSFeToZQjSA3XDsuJQvyoc6lEdP+i+GGt9h7j1SX8gwTvbgltmZ4wZ8zI10MW6tmJx7Fr/gfKMEPVlj11sNfsXBM8LghAU238qvUlbtwPkJJNFTPRQ==
+          gitea.home ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAxVy012xHvWA0LkDfIDm66PWZQM//cHJo2f+9JrbJlN
 ---
-apiVersion: secrets.hashicorp.com/v1beta1
-kind: VaultStaticSecret
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
 metadata:
+  name: gitea-repo-creds
   namespace: argocd
-  name: repo-secret
+  labels:
+    argocd.argoproj.io/secret-type: repo-creds
 spec:
-  vaultAuthRef: vault/vault-auth
-  mount: kv
-  type: kv-v2
-  path: argocd-test
-  refreshAfter: 5s
-  destination:
-    labels:
-      argocd.argoproj.io/secret-type: repo-creds
-    create: true
-    name: argocd-github-creds
+  secretStoreRef:
+    name: vault-store
+    kind: ClusterSecretStore
+  dataFrom:
+    - extract:
+        key: kv/argocd-gitea-creds
 ---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: argocd-github-creds
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repo-creds
+spec:
+  secretStoreRef:
+    name: vault-store
+    kind: ClusterSecretStore
+  dataFrom:
+    - extract:
+        key: kv/argocd-test
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: argocd-admin-creds
+  namespace: argocd
+spec:
+  secretStoreRef:
+    name: vault-store
+    kind: ClusterSecretStore
+  target:
+    name: argocd-secret
+  dataFrom:
+    - extract:
+        key: kv/argocd-admin-creds

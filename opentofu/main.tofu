@@ -2,7 +2,7 @@ terraform {
   required_providers {
     proxmox = {
       source = "bpg/proxmox"
-      version = "0.66.0"
+      version = ">= 0.66.0"
     }
     sops = {
       source = "carlpett/sops"
@@ -12,13 +12,13 @@ terraform {
 }
 
 data "sops_file" "secrets" {
-  source_file = "../secrets.yaml"
+  source_file = "/home/ian/dev/secrets/sops/k3s.secrets.yaml"
 }
 
 provider "proxmox" {
   # Configuration options
   endpoint = "https://pve.home:8006/"
-  api_token = data.sops_file.secrets.data["pve_api_token"]
+  api_token = "root@pam!terraform=${data.sops_file.secrets.data["pve_token"]}"
 
   ssh {
     username = "root"

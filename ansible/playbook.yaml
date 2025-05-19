@@ -29,7 +29,7 @@
   tasks:
     - name: Gather vars from sops file
       community.sops.load_vars:
-        file: ../secrets.yaml
+        file: /home/ian/dev/secrets/sops/k3s.secrets.yaml
         name: secrets
       delegate_to: localhost
 

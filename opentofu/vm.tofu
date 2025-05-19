@@ -22,13 +22,14 @@ resource "proxmox_virtual_environment_vm" "k3s" {
   network_device {
     enabled = true
     bridge = "vmbr0"
+    mac_address = (count.index == 0) ? "BC:24:11:FF:3B:02" : ""
   }
 
   disk {
     datastore_id = "local-lvm"
     file_id      = proxmox_virtual_environment_download_file.image.id
     interface    = "scsi0"
-    size         = 20
+    size         = 50
     ssd = true
   }
 
@@ -42,7 +43,7 @@ resource "proxmox_virtual_environment_vm" "k3s" {
   }
 
   memory {
-    dedicated = 1024 * 8
+    dedicated = 1024 * 12
   }
 
   agent {
@@ -58,8 +59,7 @@ resource "proxmox_virtual_environment_download_file" "image" {
   content_type = "iso"
   datastore_id = "hdd"
   node_name    = "pve"
-  #url = "https://cloud.debian.org/images/cloud/bookworm/20241004-1890/debian-12-genericcloud-amd64-20241004-1890.qcow2"
-  url = "https://cloud.debian.org/images/cloud/bookworm/20250210-2019/debian-12-genericcloud-amd64-20250210-2019.qcow2"
+  url = "https://cloud.debian.org/images/cloud/bookworm/20250316-2053/debian-12-genericcloud-amd64-20250316-2053.qcow2"
   file_name = "debian-12-image.img"
   overwrite = true
   overwrite_unmanaged = true

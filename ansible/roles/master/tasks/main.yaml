@@ -1,4 +1,14 @@
 ---
+- name: Create config remote location
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+
+- name: Copy OIDC config file
+  ansible.builtin.copy:
+    src: ./config.yaml
+    dest: /etc/rancher/k3s/config.yaml
+
 - name: Install k3s as Master
   ansible.builtin.shell:
     cmd: |

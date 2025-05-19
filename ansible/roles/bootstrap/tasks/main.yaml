@@ -5,7 +5,8 @@
     dest: /var/lib/rancher/k3s/server/manifests/
   with_items:
     - argocd
-    - vault
+    - external-secrets
+    - oidc-role-binding
 
 - name: Replace entry for where to send DNS requests in coredns
   ansible.builtin.replace:
@@ -68,9 +69,9 @@
   register: argocd_admin
   delegate_to: localhost
 
-- name: Wait as initially server is unresponsive after setting vault up
+- name: Wait to allow bootstrapping apps to start
   ansible.builtin.wait_for:
-    timeout: 60
+    timeout: 180
   delegate_to: localhost
 
 - name: Bootstrap argocd with apps
